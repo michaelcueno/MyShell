@@ -47,9 +47,7 @@ int main(int argc, char** argv){
 
     /* Check for stats command from user and show appropriate stats if appropriate */
     if(input.compare("stats")==0){
-
       printStats(history_list);
-      
     }else{
 
       /* create the pipe */
@@ -62,11 +60,10 @@ int main(int argc, char** argv){
       char* commands[input.length()];
       tokenize(input, commands, "|");
 
-
       while(commands[cmd_index]) { // For each command 
 
         char* tokens[strlen(commands[cmd_index])];
-        tokenize(input, tokens, " ");
+        tokenize(commands[cmd_index], tokens, " ");
       
       
         /* Fork the child to run the command in tockens[0] with arglist tokens */
@@ -92,11 +89,12 @@ int main(int argc, char** argv){
           record->proc_name = tokens[0];
           history_list.push_back(record);
         }
+      cmd_index++;
       }
 
-      cmd_index++;
     }
     /* Program loop */
+    cmd_index = 0;
     cout << ("statsh ~> ");
     getline(cin, input);    // input now holds the line form stdin cin
   }
