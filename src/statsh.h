@@ -32,7 +32,7 @@ struct history{
 /** Prints shell prompt, gets user input, returns char pointer array where each location
 	refers to a command. In other words, it seperates input by the '|' pipe symbol and 
 	stores the start of each individual command (or job) in a char pointer array */
-char** get_input();
+void get_input(char** c);
 /* This function will output the statistics of the current shell (user time/system time) */
 void printStats(vector<history*>);
 

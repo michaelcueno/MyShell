@@ -11,11 +11,11 @@ int main(int argc, char** argv){
   int fd[2];                      // File descriptors (fd[0] = Read end, fd[1] = write end)
   int next;                        // next file descriptor for connecting child processes
   int cmd_index = 0;                  // index for the commands array
-  char** commands;                    // Holds the input line, indexed by commands seperated by a '|'
+  char* commands[100];                    // Holds the input line, indexed by commands seperated by a '|'
 
   //TODO Change to current user instead of statsh
   // input now holds the line form stdin cin
-  commands = get_input();
+  get_input(commands);
  
   /* Main program loop */
   while(!match(commands, "exit")){
@@ -87,7 +87,7 @@ int main(int argc, char** argv){
     }
     /* Program loop */
     cmd_index = 0;
-    commands = get_input();
+    get_input(commands);
   }
 
   return 0;

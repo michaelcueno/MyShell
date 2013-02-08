@@ -6,3 +6,6 @@ statsh.o: statsh.h statsh.cpp
 
 helpers.o: helpers.cpp statsh.h
 	g++ -Wall -c helpers.cpp
+
+clean: 
+	rm *.o statsh

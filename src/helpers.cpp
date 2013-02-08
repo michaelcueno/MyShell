@@ -4,12 +4,11 @@
  */
  #include "statsh.h"
 
-char** get_input(){
+void get_input(char** c){
   string input;
   cout << "statsh ~> ";
   getline(cin, input);  
-  char* c[input.length()+1];
-  return tokenize(input, c, "|");
+  c = tokenize(input, c, "|");
 }
 
 void printStats(vector<history*> history_list){
