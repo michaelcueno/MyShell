@@ -1,11 +1,14 @@
-mikes_shell: statsh.o helpers.o
-	g++ -o statsh statsh.o helpers.o; rm *.o
+statsh: main.o helpers.o history.o
+	g++ -o statsh main.o helpers.o history.o
 
-statsh.o: statsh.h statsh.cpp
-	g++ -Wall -c statsh.cpp
+main.o: main.cpp helpers.h history.h
+	g++ -Wall -c main.cpp
 
-helpers.o: helpers.cpp statsh.h
+helpers.o: helpers.cpp 
 	g++ -Wall -c helpers.cpp
 
+history.o: history.cpp
+	g++ -Wall -c history.cpp
+
 clean: 
-	rm *.o statsh
+	rm *.o statsh *.gch
