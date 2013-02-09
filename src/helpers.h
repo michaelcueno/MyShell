@@ -49,7 +49,14 @@ void parse_and_exec(char* commands, History* hist);
    previous into the input of the next. The last command is redirected to stdout or a file if specified. 
    This function also waits for all childeren and puts usage stats in hist. */
 /* IMPORTANT! Commands is a static pointer array and must be freed! */
-void launch_pipeline(char** commands, History* hist);
+void launch_pipeline(int in, int out, char** commands, History* hist);
+
+/* Determines if there is a file redirection in the pipeline
+   RETURN: IN / 0 if there is a file input redirection
+   		   OUT / 1 if there is a file output redirection
+   		   -1  if there is no file redirection 
+   		   2 if there is a file in and out redirection */
+int file_redirect(char* input);
 
 /* Waits for the specifed pid and adds the usage stats to hist */
 void wait_for(int pid, char* name, History* hist); 

@@ -64,27 +64,39 @@ void wait_for(int pid, char* name, History* hist){
   hist->add(node);
 }
 
+int file_redirect(char* input){
+  fprintf(stderr, "TODO: Implement file redirection");
+  return -1;
+}
+
 void parse_and_exec(char* input, History* hist){
   static char* commands[ARG_MAX];     // Holds all commands seperated by pipeline symbol 
   tokenize(input, commands, "|");
-  if(!commands[1]){                   // There is only one commands (no pipes)
-    launch_command(0, 1, input, hist);  // Launch command using stdin and stdout 
+  int in; int out; 
+  if((file_redirect(input))==IN){     // Stdin redirected to file input 
+
   }
-  else { 
-    launch_pipeline(commands, hist);
+  else if((file_redirect(input))==OUT){ // Stdout redirected to file output
+    
+  }
+  else if((file_redirect(input))==2) {  // File redirect from input and to output 
+
+  } 
+  else{
+    in = dup(IN); out = dup(OUT);
+    launch_pipeline(in, out, commands, hist);
   }
 }
 
-void launch_pipeline(char** commands, History* hist){
+void launch_pipeline(int in, int out, char** commands, History* hist){
   int fd[2];                     // Pipeline file descriptors 
-  int next = dup(IN);            // The first command should input from stdin
-  int stdout = dup(OUT);         // Save a copy of stdout for last command 
+  int next = dup(in);
   int cmd_index = 0;             // For indexing into the commands array
   int pid[ARG_MAX];              // Child process IDs
   char* names[ARG_MAX];          // For holding onto the process names (ex: 'ls', 'grep'...)
   while(commands[cmd_index]){
     if(!commands[cmd_index+1]){  // This is the last command in the pipeline 
-      launch_command(next, stdout, commands[cmd_index], hist); 
+      launch_command(next, out, commands[cmd_index], hist); 
     }
     char* argv[strlen(commands[cmd_index])];
     tokenize(commands[cmd_index], argv, " ");
