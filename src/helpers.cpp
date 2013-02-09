@@ -35,8 +35,11 @@ char* read_line(char* prompt){
   return line;
 }
 
-void launch_command(char* command, History* hist){
+void launch_command(int in, int out, char* command, History* hist){
   /* Create the arg list for exec */
+  dup2(in, IN);                       // Replace stdin with in
+  dup2(out, OUT);                     // Replace stdout with out 
+  close(in); close(out);
   char* argv[strlen(command)];
   tokenize(command, argv, " ");
 
@@ -64,8 +67,8 @@ void wait_for(int pid, char* name, History* hist){
 void parse_and_exec(char* input, History* hist){
   static char* commands[ARG_MAX];     // Holds all commands seperated by pipeline symbol 
   tokenize(input, commands, "|");
-  if(!commands[1]){                  // There is only one commands (no pipes)
-    launch_command(input, hist);
+  if(!commands[1]){                   // There is only one commands (no pipes)
+    launch_command(0, 1, input, hist);  // Launch command using stdin and stdout 
   }
   else { 
     launch_pipeline(commands, hist);
@@ -75,10 +78,14 @@ void parse_and_exec(char* input, History* hist){
 void launch_pipeline(char** commands, History* hist){
   int fd[2];                     // Pipeline file descriptors 
   int next = dup(IN);            // The first command should input from stdin
+  int stdout = dup(OUT);         // Save a copy of stdout for last command 
   int cmd_index = 0;             // For indexing into the commands array
   int pid[ARG_MAX];              // Child process IDs
   char* names[ARG_MAX];          // For holding onto the process names (ex: 'ls', 'grep'...)
   while(commands[cmd_index]){
+    if(!commands[cmd_index+1]){  // This is the last command in the pipeline 
+      launch_command(next, stdout, commands[cmd_index], hist); 
+    }
     char* argv[strlen(commands[cmd_index])];
     tokenize(commands[cmd_index], argv, " ");
     names[cmd_index] = argv[0]; 
@@ -99,12 +106,11 @@ void launch_pipeline(char** commands, History* hist){
     close(fd[OUT]);               // Parent doesn't write to pipe
     dup2(fd[IN], next);           // Connect last output to next 
     close(fd[IN]); 
-    }
     cmd_index++;
+    }
     for(int i=0; !pid[i]; i++){ // wait for pids
       wait_for(pid[i], names[i], hist);
     }
-  delete commands; 
 }
 
 void tokenize(char* input, char** c, const char* delim){
@@ -118,6 +124,7 @@ void tokenize(char* input, char** c, const char* delim){
 }
 
 void print_char(char** x){
+  printf("%s", "NOW PRINTING CHARACTER ARRAY:") ;
   for(int i = 0 ; x[i]; i++){
     printf("%s", x[i]);
   }

@@ -37,8 +37,9 @@ char* read_line(char* prompt);
 /* Takes in an argument vector (array of char pointers) and execs argv[0] with arguments arg
  * The process that this is run in will become the executed command
  * Returns -1 if the exec failed
+ * @param in: the file descriptor that the command should use as it's input
  */
-void launch_command(char* argv, History* hist);
+void launch_command(int in, int out, char* argv, History* hist);
 
 /* Commands is a char pointer to programs seperated by the '|' symbol. Functions will be forked and pipe to 
  * eachother, make sure to set stdin and stdout once this function runs to get output back to the terminal */
