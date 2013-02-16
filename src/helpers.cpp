@@ -71,22 +71,25 @@ void redirect(char** input, int* in, int* out){
   char input_file[strlen(first_command)];
   bool redirect_in = false; bool redirect_out = false;
 
-  if(first_command==last_command){            // Must do the output redirection first to maintain input's integrity
-    int size = strlen(last_command);
-    for(int i=0; i<size; i++){
-      if(last_command[i]=='>'){
-        redirect_out = true; 
-        last_command[i] = '\0';               // Cut out the file name part so it doesn't run as a program 
-        i++;
-        for(int j=0; i<size+1; i++, j++){     // Need size+1 since we skipped the '>'
-          if(last_command[i]==' '){ i++; }    // Skip whitespace
-          output_file[j] = last_command[i];   // Copy output filename 
-        }
+  /** Parse the last command first because of the case when last_command==first_command
+    * In this case, parsing the line with precedence to '<' would make the rest of the line 
+    * null and we would loose the '>' redirect if there was one. But since a '>' can only come 
+    * after a '<', if we parse for '>' first we will be fine 
+    */
+  int size = strlen(last_command);          
+  for(int i=0; i<size; i++){                  
+    if(last_command[i]=='>'){
+      redirect_out = true; 
+      last_command[i] = '\0';               // Cut out the file name part so it doesn't run as a program 
+      i++;
+      for(int j=0; i<size+1; i++, j++){     // Need size+1 since we skipped the '>'
+        if(last_command[i]==' '){ i++; }    // Skip whitespace
+        output_file[j] = last_command[i];   // Copy output filename 
       }
     }
   }
 
-  int size = strlen(first_command);
+  size = strlen(first_command);
   for(int i=0; i<size; i++){                  // Now walk through input for a '<' redirect
     if(first_command[i]=='<'){
       redirect_in = true;
@@ -109,7 +112,7 @@ void redirect(char** input, int* in, int* out){
   if(redirect_out && strlen(output_file)<=0){
     fprintf(stderr, "Syntax error, no file specified\n");
   }
-  else if(redirect_out && (*out = open(output_file, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR )) < 0 ){
+  else if(redirect_out && (*out = open(output_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR )) < 0 ){
     fprintf(stderr, "Could not open file\n");
     *out = dup(OUT);
   }
