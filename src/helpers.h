@@ -36,10 +36,10 @@ char* read_line(char* prompt);
 
 /* Takes in an argument vector (array of char pointers) and execs argv[0] with arguments arg
  * The process that this is run in will become the executed command
- * Returns -1 if the exec failed
- * @param in: the file descriptor that the command should use as it's input
+ * Returns pid of forked proccess or -1 if failed 
+ *  * @param in: the file descriptor that the command should use as it's input
  */
-void launch_command(int in, int out, char* argv, History* hist);
+int launch_command(int in, int out, char** argv);
 
 /* Parses input and determines if the first command redirects from a file 
  * or if the last command redirects to an output file. 

@@ -34,13 +34,11 @@ char* read_line(char* prompt){
   return line;
 }
 
-void launch_command(int in, int out, char* command, History* hist){
+int launch_command(int in, int out, char** argv){
   /* Create the arg list for exec */
   dup2(in, IN);                       // Replace stdin with in
   dup2(out, OUT);                     // Replace stdout with out 
   close(in); close(out);
-  char* argv[strlen(command)];
-  tokenize(command, argv, " ");
 
   /* Fork of a proccess and exec */
   int pid;
@@ -51,11 +49,11 @@ void launch_command(int in, int out, char* command, History* hist){
       exit(0);
     }
   }
-  /* Wait for child to exit and record usage stats */
-  wait_for(pid, argv[0], hist);
+  return pid;
 }
 
 void wait_for(int pid, char* name, History* hist){
+  fprintf(stderr, "%s\n", name);
   int status;
   struct rusage usage;
   wait4(pid, &status, 0, &usage);
@@ -132,20 +130,20 @@ void launch_pipeline(int in, int out, char** commands, History* hist){
   int fd[2];                     // Pipeline file descriptors 
   int next = dup(in);            // Holds the output from the last child for input into the next child 
   int cmd_index = 0;             // For indexing into the commands array
-  int pid[ARG_MAX];              // Child process IDs
+  int pid[ARG_MAX]={0};          // Child process IDs
   char* names[ARG_MAX];          // For holding onto the process names (ex: 'ls', 'grep'...)
   while(commands[cmd_index]){
-    if(!commands[cmd_index+1]){  // This is the last command in the pipeline 
-      launch_command(next, out, commands[cmd_index], hist); 
-      cmd_index++; continue;
-    }
     char* argv[strlen(commands[cmd_index])];
     tokenize(commands[cmd_index], argv, " ");
-    names[cmd_index] = argv[0]; 
+    names[cmd_index] = argv[0];
+    if(!commands[cmd_index+1]){  // This is the last command in the pipeline 
+      pid[cmd_index] = launch_command(next, out, argv); 
+      cmd_index++; continue;
+    }
     pipe(fd);
     if((pid[cmd_index]=fork())<0){
       fprintf(stderr, "Could not fork!");
-    }else if(pid[cmd_index]==0){ // Inside child code
+    }else if(pid[cmd_index]==0){  // Inside child code
       close(fd[IN]);              // Child doesn't need pipe input 
       dup2(next, IN);             // The input should come from the output of the last child 
       dup2(fd[OUT], OUT);         // Child should write to write end of pipe
@@ -160,14 +158,15 @@ void launch_pipeline(int in, int out, char** commands, History* hist){
     dup2(fd[IN], next);           // Connect last output to next 
     close(fd[IN]); 
     cmd_index++;
-    }
-    for(int i=0; !pid[i]; i++){ // wait for pids
-      wait_for(pid[i], names[i], hist);
-    }
+  }
+
+  for(int i=0; pid[i]!=0; i++){    // wait for pids
+    fprintf(stderr, "%d\n", i);
+    wait_for(pid[i], names[i], hist);
+  }
 }
 
 void tokenize(char* input, char** c, const char* delim){
-  /* Create the argument list of null terminated char arrays */
   int i =0;
   c[i] = strtok(input, delim);
   while(c[i]){
@@ -179,7 +178,7 @@ void tokenize(char* input, char** c, const char* delim){
 int num_commands(char** input){
   int i; 
   for(i=0; input[i]; i++){
-    // iterate over commands 
+    /* iterate over commands */
   }
   return i-1; 
 }
