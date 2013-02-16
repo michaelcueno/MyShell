@@ -14,7 +14,6 @@ char* prompt(){
   return output;
 }
 
-
 bool built_in_command(char* input, History *hist){
   if(strcmp(input, "exit")==0){
     exit(0);
@@ -48,7 +47,7 @@ void launch_command(int in, int out, char* command, History* hist){
   if((pid = fork())<0){ printf("%s", "Couldn't fork"); }
   if(pid==0){ // in child
     if(execvp(argv[0], argv)<0){
-      printf("%s", "Error in exec()");
+      printf("%s", "Error in exec()\n");
       exit(0);
     }
   }
@@ -64,39 +63,78 @@ void wait_for(int pid, char* name, History* hist){
   hist->add(node);
 }
 
-int file_redirect(char* input){
-  fprintf(stderr, "TODO: Implement file redirection");
-  return -1;
+// cat < in_file > out_file 
+void redirect(char** input, int* in, int* out){
+  char* first_command = input[0];             
+  char* last_command = input[num_commands(input)];
+  char output_file[strlen(last_command)];
+  char input_file[strlen(first_command)];
+  bool redirect_in = false; bool redirect_out = false;
+
+  if(first_command==last_command){            // Must do the output redirection first to maintain input's integrity
+    int size = strlen(last_command);
+    for(int i=0; i<size; i++){
+      if(last_command[i]=='>'){
+        redirect_out = true; 
+        last_command[i] = '\0';               // Cut out the file name part so it doesn't run as a program 
+        i++;
+        for(int j=0; i<size+1; i++, j++){     // Need size+1 since we skipped the '>'
+          if(last_command[i]==' '){ i++; }    // Skip whitespace
+          output_file[j] = last_command[i];   // Copy output filename 
+        }
+      }
+    }
+  }
+
+  int size = strlen(first_command);
+  for(int i=0; i<size; i++){                  // Now walk through input for a '<' redirect
+    if(first_command[i]=='<'){
+      redirect_in = true;
+      first_command[i] = '\0';                // Set to null so that exec only gets the program name and arguments
+      i++;                                    // Skip over null byte
+      for(int j=0; i<size+1; i++, j++){
+        if(first_command[i]==' '){ i++; }     // Skip whitespace (Note, this will turn what should be errors into concatonated file names)
+        input_file[j] = first_command[i];   // Copy the contents of first_command after the < symbol into file_name
+      }
+    }
+  }
+
+  if(redirect_in && strlen(input_file)<=0){
+    fprintf(stderr, "Syntax error, no file specified\n");
+  }
+  else if(redirect_in && (*in = open(input_file, O_RDONLY)) < 0 ){
+    fprintf(stderr, "Could not open file\n");
+    *in = dup(IN);
+  }
+  if(redirect_out && strlen(output_file)<=0){
+    fprintf(stderr, "Syntax error, no file specified\n");
+  }
+  else if(redirect_out && (*out = open(output_file, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR )) < 0 ){
+    fprintf(stderr, "Could not open file\n");
+    *out = dup(OUT);
+  }
 }
 
 void parse_and_exec(char* input, History* hist){
-  static char* commands[ARG_MAX];     // Holds all commands seperated by pipeline symbol 
+  if(!input || strlen(input)<=0){ return; }   // error check
+  static char* commands[ARG_MAX];             // Holds all commands seperated by pipeline symbol 
   tokenize(input, commands, "|");
-  int in; int out; 
-  if((file_redirect(input))==IN){     // Stdin redirected to file input 
-
-  }
-  else if((file_redirect(input))==OUT){ // Stdout redirected to file output
-    
-  }
-  else if((file_redirect(input))==2) {  // File redirect from input and to output 
-
-  } 
-  else{
-    in = dup(IN); out = dup(OUT);
-    launch_pipeline(in, out, commands, hist);
-  }
+  int in = dup(IN);
+  int out = dup(OUT);
+  redirect(commands, &in, &out);             // Returns input file descriptor or stdin
+  launch_pipeline(in, out, commands, hist);
 }
 
 void launch_pipeline(int in, int out, char** commands, History* hist){
   int fd[2];                     // Pipeline file descriptors 
-  int next = dup(in);
+  int next = dup(in);            // Holds the output from the last child for input into the next child 
   int cmd_index = 0;             // For indexing into the commands array
   int pid[ARG_MAX];              // Child process IDs
   char* names[ARG_MAX];          // For holding onto the process names (ex: 'ls', 'grep'...)
   while(commands[cmd_index]){
     if(!commands[cmd_index+1]){  // This is the last command in the pipeline 
       launch_command(next, out, commands[cmd_index], hist); 
+      cmd_index++; continue;
     }
     char* argv[strlen(commands[cmd_index])];
     tokenize(commands[cmd_index], argv, " ");
@@ -111,7 +149,7 @@ void launch_pipeline(int in, int out, char** commands, History* hist){
       close(fd[OUT]); 
       close(next);
       if(execvp(argv[0], argv)){  // If exec returned then something went wrong 
-        fprintf(stderr, "Could not execute command!");
+        fprintf(stderr, "Error in exec()\n");
         exit(0);
       }
     }                            // Inside parent code
@@ -133,6 +171,14 @@ void tokenize(char* input, char** c, const char* delim){
     i++;
     c[i] = strtok(NULL, delim);
   }
+}
+
+int num_commands(char** input){
+  int i; 
+  for(i=0; input[i]; i++){
+    // iterate over commands 
+  }
+  return i-1; 
 }
 
 void print_char(char** x){

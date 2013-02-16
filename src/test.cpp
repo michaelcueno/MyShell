@@ -9,17 +9,18 @@
 #include <string>
 #include <cstring>
 #include <unistd.h>
+#include <fcntl.h>
 using namespace std;
 
 int main(int argc, char** argv){
 
-  char* test[3];
-  char ls[3]; strcpy(ls, "ls\0");
-  char p[3]; strcpy(p, "..\0");
-  test[0] = ls;
-  test[1] = p;
+  char file[30]; strcpy(file, "Makefile\0");
+  char file_name[30];
+  strncpy(file_name, file, strlen(file)-1);
 
-  execvp(test[0], test);
+  int thing =  open(file, O_RDONLY);
+
+  cout << thing << endl;
 
   return 0;
 }

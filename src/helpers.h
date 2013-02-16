@@ -10,7 +10,6 @@
  */
 #ifndef _STATSH_H
 #define _STATSH_H
-
 #include <stdio.h>
 #include <cstring>
 #include <unistd.h>
@@ -20,6 +19,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <vector>
+#include <fcntl.h>
 #include "history.h"
 using namespace std;
 
@@ -41,6 +41,12 @@ char* read_line(char* prompt);
  */
 void launch_command(int in, int out, char* argv, History* hist);
 
+/* Parses input and determines if the first command redirects from a file 
+ * or if the last command redirects to an output file. 
+ * Returns: void, sets params in and out to be the file descriptor of the redirection
+ * files if they exist, or stdin / stdout if no redirection */
+void redirect(char** input, int* in, int* out);
+
 /* Commands is a char pointer to programs seperated by the '|' symbol. Functions will be forked and pipe to 
  * eachother, make sure to set stdin and stdout once this function runs to get output back to the terminal */
 void parse_and_exec(char* commands, History* hist);
@@ -51,13 +57,6 @@ void parse_and_exec(char* commands, History* hist);
 /* IMPORTANT! Commands is a static pointer array and must be freed! */
 void launch_pipeline(int in, int out, char** commands, History* hist);
 
-/* Determines if there is a file redirection in the pipeline
-   RETURN: IN / 0 if there is a file input redirection
-   		   OUT / 1 if there is a file output redirection
-   		   -1  if there is no file redirection 
-   		   2 if there is a file in and out redirection */
-int file_redirect(char* input);
-
 /* Waits for the specifed pid and adds the usage stats to hist */
 void wait_for(int pid, char* name, History* hist); 
 
@@ -65,16 +64,17 @@ void wait_for(int pid, char* name, History* hist);
 bool built_in_command(char* line, History* hist);
 
 /* Takes char* input from user and returns a char* array of arguments seperated by @param delim.
+ * char* input will be changed! Function can only be called once on any input argument! 
  *  @param c: char** where the tokenized input will be stored */
 void tokenize(char* input, char** c, const char* delim);
+
+/* Returns the number of valid pointers in the char** input array */
+int num_commands(char** input); 
 
 /* Helper test method for printing the arg array */
 void print_char(char** x);
 
 /* Matches the first argument from stdin with char* x. Returns true if they are equal*/
 bool match(char** commands, char* x);
-
-int getSize(char* x);
-
 
 #endif
