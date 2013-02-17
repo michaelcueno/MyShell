@@ -16,9 +16,15 @@ public:
       int pid; 
       struct rusage usage_stats;
     public:
-        Node(char* name, struct rusage usage){
+        Node(char* name, int pid, struct rusage usage){
             this->name = string(name);
             this->usage_stats = usage;
+            this->pid = pid;
+        }
+        Node(string name, int pid, struct rusage usage){
+            this->name = name;
+            this->usage_stats = usage; 
+            this->pid = pid; 
         }
         string getName(){return this->name;}
         struct rusage getUsage(){return this->usage_stats;}

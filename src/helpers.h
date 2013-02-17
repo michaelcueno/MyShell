@@ -28,6 +28,11 @@ using namespace std;
 #define IN 0   // read end
 #define OUT 1  // write end
 
+struct proc {   // Struct for keeping a pid and it's executable name together
+	string name; 
+	int pid; 
+};
+
 /* returns a char* with the prompt text. TODO: implement user@pwd >*/
 char* prompt();
 
@@ -48,7 +53,7 @@ int launch_command(int in, int out, char** argv);
 void redirect(char** input, int* in, int* out);
 
 // tODO
-void check_background(vector<int>* background);
+void check_background(vector<proc>* background, History* hist);
 
 /** Parses commands and checks if the last command has a & at the end, if it does, method returns true
   * Otherwise returns false; 
@@ -57,13 +62,13 @@ bool is_background(char** commands);
 
 /* Commands is a char pointer to programs seperated by the '|' symbol. Functions will be forked and pipe to 
  * eachother, make sure to set stdin and stdout once this function runs to get output back to the terminal */
-void parse_and_exec(char* commands, History* hist, vector<int>* background);
+void parse_and_exec(char* commands, History* hist, vector<proc>* background);
 
 /* Loops on each piped command, creating a pipeline for each command, and pipeing the output of the 
    previous into the input of the next. The last command is redirected to stdout or a file if specified. 
    This function also waits for all childeren and puts usage stats in hist. */
 /* IMPORTANT! Commands is a static pointer array and must be freed! */
-void launch_pipeline(int in, int out, char** commands, History* hist, vector<int>* background);
+void launch_pipeline(int in, int out, char** commands, History* hist, vector<proc>* background);
 
 /* Waits for the specifed pid and adds the usage stats to hist */
 void wait_for(int pid, char* name, History* hist); 

@@ -15,12 +15,12 @@ int main(int argc, char** argv){
   int stdin = dup(IN);
   int stdout = dup(OUT);
 
-  vector<int> *background = new vector<int>(); 
+  vector<proc> *background = new vector<proc>(); 
 
   // Main program loop
   while(true){
     // Check for any completed background processes
-    check_background(background);
+    check_background(background, hist);
 
     // Get user input
     char* input = read_line(prompt());

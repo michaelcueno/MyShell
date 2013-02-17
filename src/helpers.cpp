@@ -56,20 +56,22 @@ void wait_for(int pid, char* name, History* hist){
   int status;
   struct rusage usage;
   wait4(pid, &status, 0, &usage);
-  History::Node node(name, usage);
+  History::Node node(name, pid, usage);
   hist->add(node);
 }
 
-void check_background(vector<int>* background){
-  vector<int>::iterator i = background->begin();
+void check_background(vector<proc>* background, History* hist){
+  vector<proc>::iterator i = background->begin();
   for(; i != background->end() && !background->empty(); ++i){
    struct rusage usage; 
-    int status = wait4(*i, 0, WNOHANG, &usage);
+    int status = wait4(i->pid, 0, WNOHANG, &usage);
     if(status<0){ fprintf(stderr, "Something went wrong with a background process"); }
     else if(status==0){                       // Background process not finished yet 
       /* do nothing */
     }else{                                    // Background process finished 
       // Also needs ot add to history 
+      History::Node h(i->name, i->pid, usage);
+      hist->add(h);
       background->erase(i);
     }
   }
@@ -130,7 +132,7 @@ void redirect(char** input, int* in, int* out){
   }
 }
 
-void parse_and_exec(char* input, History* hist, vector<int>* background){
+void parse_and_exec(char* input, History* hist, vector<proc>* background){
   if(!input || strlen(input)<=0){ return; }   // error check
   static char* commands[ARG_MAX];             // Holds all commands seperated by pipeline symbol 
   tokenize(input, commands, "|");
@@ -152,7 +154,7 @@ bool is_background(char** commands){
   return false; 
 }
 
-void launch_pipeline(int in, int out, char** commands, History* hist, vector<int>* background){
+void launch_pipeline(int in, int out, char** commands, History* hist, vector<proc>* background){
   int fd[2];                     // Pipeline file descriptors 
   int next = dup(in);            // Holds the output from the last child for input into the next child 
   int cmd_index = 0;             // For indexing into the commands array
@@ -190,9 +192,13 @@ void launch_pipeline(int in, int out, char** commands, History* hist, vector<int
   for(int i=0; pid[i]!=0; i++){    // wait for pids
     if(!backgr)
       wait_for(pid[i], names[i], hist);
-    else
-      background->push_back(pid[i]);
-      check_background(background);
+    else{
+      proc p;
+      p.pid = pid[i];
+      p.name = string(names[i]);
+      background->push_back(p);
+      check_background(background, hist);
+    }
   }
 }
 
