@@ -40,7 +40,7 @@ int launch_command(int in, int out, char** argv){
   dup2(out, OUT);                     // Replace stdout with out 
   close(in); close(out);
 
-  /* Fork of a proccess and exec */
+  /* Fork of a process and exec */
   int pid;
   if((pid = fork())<0){ printf("%s", "Couldn't fork"); }
   if(pid==0){ // in child
@@ -53,12 +53,26 @@ int launch_command(int in, int out, char** argv){
 }
 
 void wait_for(int pid, char* name, History* hist){
-  fprintf(stderr, "%s\n", name);
   int status;
   struct rusage usage;
   wait4(pid, &status, 0, &usage);
   History::Node node(name, usage);
   hist->add(node);
+}
+
+void check_background(vector<int>* background){
+  vector<int>::iterator i = background->begin();
+  for(; i != background->end() && !background->empty(); ++i){
+   struct rusage usage; 
+    int status = wait4(*i, 0, WNOHANG, &usage);
+    if(status<0){ fprintf(stderr, "Something went wrong with a background process"); }
+    else if(status==0){                       // Background process not finished yet 
+      /* do nothing */
+    }else{                                    // Background process finished 
+      // Also needs ot add to history 
+      background->erase(i);
+    }
+  }
 }
 
 // cat < in_file > out_file 
@@ -116,22 +130,35 @@ void redirect(char** input, int* in, int* out){
   }
 }
 
-void parse_and_exec(char* input, History* hist){
+void parse_and_exec(char* input, History* hist, vector<int>* background){
   if(!input || strlen(input)<=0){ return; }   // error check
   static char* commands[ARG_MAX];             // Holds all commands seperated by pipeline symbol 
   tokenize(input, commands, "|");
   int in = dup(IN);
   int out = dup(OUT);
   redirect(commands, &in, &out);             // Returns input file descriptor or stdin
-  launch_pipeline(in, out, commands, hist);
+  launch_pipeline(in, out, commands, hist, background);
 }
 
-void launch_pipeline(int in, int out, char** commands, History* hist){
+bool is_background(char** commands){
+  char* last_command = commands[num_commands(commands)];
+  int size = strlen(last_command);
+  for(int i = 0; i<size; i++){
+    if(last_command[i]=='&'){
+      last_command[i] = '\0';
+      return true;               // TODO: Should check if & is at the end of the input, for now I think its ok
+    }
+  }
+  return false; 
+}
+
+void launch_pipeline(int in, int out, char** commands, History* hist, vector<int>* background){
   int fd[2];                     // Pipeline file descriptors 
   int next = dup(in);            // Holds the output from the last child for input into the next child 
   int cmd_index = 0;             // For indexing into the commands array
   int pid[ARG_MAX]={0};          // Child process IDs
   char* names[ARG_MAX];          // For holding onto the process names (ex: 'ls', 'grep'...)
+  bool backgr = is_background(commands); // set boolean to see if user entered '&' for background process
   while(commands[cmd_index]){
     char* argv[strlen(commands[cmd_index])];
     tokenize(commands[cmd_index], argv, " ");
@@ -161,10 +188,14 @@ void launch_pipeline(int in, int out, char** commands, History* hist){
   }
 
   for(int i=0; pid[i]!=0; i++){    // wait for pids
-    fprintf(stderr, "%d\n", i);
-    wait_for(pid[i], names[i], hist);
+    if(!backgr)
+      wait_for(pid[i], names[i], hist);
+    else
+      background->push_back(pid[i]);
+      check_background(background);
   }
 }
+
 
 void tokenize(char* input, char** c, const char* delim){
   int i =0;

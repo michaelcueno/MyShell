@@ -47,15 +47,23 @@ int launch_command(int in, int out, char** argv);
  * files if they exist, or stdin / stdout if no redirection */
 void redirect(char** input, int* in, int* out);
 
+// tODO
+void check_background(vector<int>* background);
+
+/** Parses commands and checks if the last command has a & at the end, if it does, method returns true
+  * Otherwise returns false; 
+  */ 
+bool is_background(char** commands); 
+
 /* Commands is a char pointer to programs seperated by the '|' symbol. Functions will be forked and pipe to 
  * eachother, make sure to set stdin and stdout once this function runs to get output back to the terminal */
-void parse_and_exec(char* commands, History* hist);
+void parse_and_exec(char* commands, History* hist, vector<int>* background);
 
 /* Loops on each piped command, creating a pipeline for each command, and pipeing the output of the 
    previous into the input of the next. The last command is redirected to stdout or a file if specified. 
    This function also waits for all childeren and puts usage stats in hist. */
 /* IMPORTANT! Commands is a static pointer array and must be freed! */
-void launch_pipeline(int in, int out, char** commands, History* hist);
+void launch_pipeline(int in, int out, char** commands, History* hist, vector<int>* background);
 
 /* Waits for the specifed pid and adds the usage stats to hist */
 void wait_for(int pid, char* name, History* hist); 

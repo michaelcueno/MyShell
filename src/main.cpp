@@ -15,14 +15,20 @@ int main(int argc, char** argv){
   int stdin = dup(IN);
   int stdout = dup(OUT);
 
+  vector<int> *background = new vector<int>(); 
+
   // Main program loop
   while(true){
+    // Check for any completed background processes
+    check_background(background);
+
+    // Get user input
     char* input = read_line(prompt());
 
     // Check if user entered 'stats' or 'exit'
     if(!built_in_command(input, hist)){
 
-      parse_and_exec(input, hist);
+      parse_and_exec(input, hist, background);
 
       // Reset for next line input 
       dup2(stdin, IN);

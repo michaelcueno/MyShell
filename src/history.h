@@ -13,6 +13,7 @@ class History {
 public:
     class Node {
       string name;
+      int pid; 
       struct rusage usage_stats;
     public:
         Node(char* name, struct rusage usage){

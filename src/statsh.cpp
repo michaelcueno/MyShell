@@ -15,6 +15,8 @@ int main(int argc, char** argv){
   int stdin = dup(IN);
   int stdout = dup(OUT);
 
+  vector<int> background; 
+
   while(true){
 
     char* input = read_line(prompt());
@@ -23,7 +25,7 @@ int main(int argc, char** argv){
     if(!built_in_command(input, hist)){
 
       // lets execute one command 
-      startPipeline(input, hist);
+      startPipeline(input, hist, background);
 
       dup2(stdin, IN);
       dup2(stdout, OUT);
