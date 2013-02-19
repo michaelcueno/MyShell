@@ -74,7 +74,7 @@ void parse_and_exec(char* commands, History* hist, vector<proc>* background);
    previous into the input of the next. The last command is redirected to stdout or a file if specified. 
    This function also waits for all childeren and puts usage stats in hist. */
 /* IMPORTANT! Commands is a static pointer array and must be freed! */
-void launch_pipeline(int in, int out, char** commands, History* hist, vector<proc>* background);
+void launch_pipeline(int in, int out, char** commands, History* hist, vector<proc>* background, bool is_bg);
 
 /** Waits for the specifed pid and adds the usage stats to hist */
 void wait_for(int pid, char* name, History* hist); 

@@ -40,5 +40,6 @@ int main(int argc, char** argv){
   } /* End main loop */
   // Free memory  
   delete hist;
+  delete background;
   return 0;
 } /* End of main */

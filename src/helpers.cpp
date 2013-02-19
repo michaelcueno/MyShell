@@ -72,12 +72,12 @@ void wait_for(int pid, char* name, History* hist){
 
 void check_background(vector<proc>* background, History* hist){
   vector<proc>::iterator i = background->begin();
-  for(; i != background->end() && !background->empty(); ++i){
+  while(i != background->end() && !background->empty()){
    struct rusage usage; 
     int status = wait4(i->pid, 0, WNOHANG, &usage);
     if(status<0){ fprintf(stderr, "Something went wrong with a background process"); }
     else if(status==0){                        // Background process not finished yet 
-      /* do nothing */
+      i++;
     }else{                                     // Background process finished 
       History::Node h(i->name, i->pid, usage); // Add to history
       hist->add(h);
@@ -147,8 +147,9 @@ void parse_and_exec(char* input, History* hist, vector<proc>* background){
   tokenize(input, commands, "|");
   int in = dup(IN);
   int out = dup(OUT);
+  bool is_bg = is_background(commands);  // set boolean to see if user entered '&' for background process
   redirect(commands, &in, &out);              // Returns input file descriptor or stdin
-  launch_pipeline(in, out, commands, hist, background);
+  launch_pipeline(in, out, commands, hist, background, is_bg);
 }
 
 bool is_background(char** commands){
@@ -163,13 +164,12 @@ bool is_background(char** commands){
   return false; 
 }
 
-void launch_pipeline(int in, int out, char** commands, History* hist, vector<proc>* background){
+void launch_pipeline(int in, int out, char** commands, History* hist, vector<proc>* background, bool is_bg){
   int fd[2];                              // Pipeline file descriptors 
   int next = dup(in);                     // Holds the output from the last child for input into the next child 
   int cmd_index = 0;                      // For indexing into the commands array
   int pid[CMD_MAX]={0};                   // Child process IDs
   char* names[CMD_MAX];                   // For holding onto the process names (ex: 'ls', 'grep'...)
-  bool backgr = is_background(commands);  // set boolean to see if user entered '&' for background process
   while(commands[cmd_index]){
     char* argv[strlen(commands[cmd_index])];
     tokenize(commands[cmd_index], argv, " ");
@@ -199,16 +199,16 @@ void launch_pipeline(int in, int out, char** commands, History* hist, vector<pro
   }
 
   for(int i=0; pid[i]!=0; i++){           // wait for pids
-    if(!backgr)
+    if(!is_bg)
       wait_for(pid[i], names[i], hist);
     else{
       proc p;
       p.pid = pid[i];
       p.name = string(names[i]);
       background->push_back(p);
-      check_background(background, hist);
     }
   }
+  check_background(background, hist);
 }
 
 
