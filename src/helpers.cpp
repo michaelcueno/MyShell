@@ -1,6 +1,6 @@
 /**
  * Helper methods for the statsh program, for function descriptions see helpers.h 
- * Copyright @ Michael Cueno 2013
+ * Copyright @ Michael Cueno 2013 (mcueno2)
  */
 #include "helpers.h"
 #include "history.h"

@@ -1,6 +1,6 @@
 /**
  * Main method for statsh program (linux shell)
- * Copyright @ Michael Cueno 2013
+ * Copyright @ Michael Cueno 2013 (mcueno2)
  */
 #include "helpers.h"
 #include "history.h"

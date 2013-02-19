@@ -1,5 +1,5 @@
 /**
- * Copyright @ Michael Cueno 2013
+ * Copyright @ Michael Cueno 2013 (mcueno2)
  *
  * Simple history class implementing a vector of previously run processes in the shell. 
  * Holds a name, pid and usage stats for each process run to be reported whenever

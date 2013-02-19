@@ -1,5 +1,5 @@
 /**
- * Copyright: Michael Cueno @ 2013
+ * Copyright: Michael Cueno @ 2013  (mcueno2)
  *
  * This is my implementation of a basic linux shell program. It was assigned
  * as a project for my Operating Systems class at UIC. This file contains the

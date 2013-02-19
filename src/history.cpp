@@ -1,5 +1,5 @@
 /**
- * Copyright @ Michael Cueno 2013
+ * Copyright @ Michael Cueno 2013 (mcueno2)
  */
 
 #include "history.h"
