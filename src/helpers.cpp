@@ -1,16 +1,26 @@
 /**
- * Helper methods for the statsh program
+ * Helper methods for the statsh program, for function descriptions see helpers.h 
  * Copyright @ Michael Cueno 2013
  */
 #include "helpers.h"
 #include "history.h"
+#include <stdio.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 
-
 char* prompt(){
   static char output[100];
-  sprintf(output, "statsh~> ");
+  FILE *buf = popen("whoami", "r");
+  size_t s = 0;
+  char* id;
+  getline(&id, &s, buf);
+  int size = (int)strlen(id);
+  for(int i=0; i<size; i++){
+    if(id[i]=='\n')
+      id[i]='\0';
+  }
+  pclose(buf);
+  sprintf(output, "%s ~> ", id);
   return output;
 }
 
@@ -27,10 +37,10 @@ bool built_in_command(char* input, History *hist){
 
 char* read_line(char* prompt){
   printf("%s",prompt);
-  static char* line = NULL;  // Needs to be freed in main!!
+  static char* line = NULL;           // Needs to be freed in main!!
   size_t s = 0;
   getline(&line, &s, stdin);
-  line[ strlen(line) - 1 ] = '\0'; // get rid of pesky newline character
+  line[ strlen(line) - 1 ] = '\0';    // get rid of pesky newline character
   return line;
 }
 
@@ -43,7 +53,7 @@ int launch_command(int in, int out, char** argv){
   /* Fork of a process and exec */
   int pid;
   if((pid = fork())<0){ printf("%s", "Couldn't fork"); }
-  if(pid==0){ // in child
+  if(pid==0){                         // in child
     if(execvp(argv[0], argv)<0){
       printf("%s", "Error in exec()\n");
       exit(0);
@@ -66,18 +76,16 @@ void check_background(vector<proc>* background, History* hist){
    struct rusage usage; 
     int status = wait4(i->pid, 0, WNOHANG, &usage);
     if(status<0){ fprintf(stderr, "Something went wrong with a background process"); }
-    else if(status==0){                       // Background process not finished yet 
+    else if(status==0){                        // Background process not finished yet 
       /* do nothing */
-    }else{                                    // Background process finished 
-      // Also needs ot add to history 
-      History::Node h(i->name, i->pid, usage);
+    }else{                                     // Background process finished 
+      History::Node h(i->name, i->pid, usage); // Add to history
       hist->add(h);
       background->erase(i);
     }
   }
 }
-
-// cat < in_file > out_file 
+ 
 void redirect(char** input, int* in, int* out){
   char* first_command = input[0];             
   char* last_command = input[num_commands(input)];
@@ -85,10 +93,10 @@ void redirect(char** input, int* in, int* out){
   char input_file[strlen(first_command)];
   bool redirect_in = false; bool redirect_out = false;
 
-  /** Parse the last command first because of the case when last_command==first_command
+  /** We must parse the last command first because of the case when last_command==first_command.
     * In this case, parsing the line with precedence to '<' would make the rest of the line 
     * null and we would loose the '>' redirect if there was one. But since a '>' can only come 
-    * after a '<', if we parse for '>' first we will be fine 
+    * after a '<', if we parse for '>' first we will be fine.
     */
   int size = strlen(last_command);          
   for(int i=0; i<size; i++){                  
@@ -111,11 +119,12 @@ void redirect(char** input, int* in, int* out){
       i++;                                    // Skip over null byte
       for(int j=0; i<size+1; i++, j++){
         if(first_command[i]==' '){ i++; }     // Skip whitespace (Note, this will turn what should be errors into concatonated file names)
-        input_file[j] = first_command[i];   // Copy the contents of first_command after the < symbol into file_name
+        input_file[j] = first_command[i];     // Copy the contents of first_command after the < symbol into file_name
       }
     }
   }
 
+  /* Redirection cases */
   if(redirect_in && strlen(input_file)<=0){
     fprintf(stderr, "Syntax error, no file specified\n");
   }
@@ -134,11 +143,11 @@ void redirect(char** input, int* in, int* out){
 
 void parse_and_exec(char* input, History* hist, vector<proc>* background){
   if(!input || strlen(input)<=0){ return; }   // error check
-  static char* commands[ARG_MAX];             // Holds all commands seperated by pipeline symbol 
+  static char* commands[CMD_MAX];             // Holds all commands seperated by pipeline symbol 
   tokenize(input, commands, "|");
   int in = dup(IN);
   int out = dup(OUT);
-  redirect(commands, &in, &out);             // Returns input file descriptor or stdin
+  redirect(commands, &in, &out);              // Returns input file descriptor or stdin
   launch_pipeline(in, out, commands, hist, background);
 }
 
@@ -148,48 +157,48 @@ bool is_background(char** commands){
   for(int i = 0; i<size; i++){
     if(last_command[i]=='&'){
       last_command[i] = '\0';
-      return true;               // TODO: Should check if & is at the end of the input, for now I think its ok
+      return true;   
     }
   }
   return false; 
 }
 
 void launch_pipeline(int in, int out, char** commands, History* hist, vector<proc>* background){
-  int fd[2];                     // Pipeline file descriptors 
-  int next = dup(in);            // Holds the output from the last child for input into the next child 
-  int cmd_index = 0;             // For indexing into the commands array
-  int pid[ARG_MAX]={0};          // Child process IDs
-  char* names[ARG_MAX];          // For holding onto the process names (ex: 'ls', 'grep'...)
-  bool backgr = is_background(commands); // set boolean to see if user entered '&' for background process
+  int fd[2];                              // Pipeline file descriptors 
+  int next = dup(in);                     // Holds the output from the last child for input into the next child 
+  int cmd_index = 0;                      // For indexing into the commands array
+  int pid[CMD_MAX]={0};                   // Child process IDs
+  char* names[CMD_MAX];                   // For holding onto the process names (ex: 'ls', 'grep'...)
+  bool backgr = is_background(commands);  // set boolean to see if user entered '&' for background process
   while(commands[cmd_index]){
     char* argv[strlen(commands[cmd_index])];
     tokenize(commands[cmd_index], argv, " ");
     names[cmd_index] = argv[0];
-    if(!commands[cmd_index+1]){  // This is the last command in the pipeline 
+    if(!commands[cmd_index+1]){           // This is the last command in the pipeline 
       pid[cmd_index] = launch_command(next, out, argv); 
       cmd_index++; continue;
     }
     pipe(fd);
     if((pid[cmd_index]=fork())<0){
       fprintf(stderr, "Could not fork!");
-    }else if(pid[cmd_index]==0){  // Inside child code
-      close(fd[IN]);              // Child doesn't need pipe input 
-      dup2(next, IN);             // The input should come from the output of the last child 
-      dup2(fd[OUT], OUT);         // Child should write to write end of pipe
+    }else if(pid[cmd_index]==0){          // Inside child code
+      close(fd[IN]);                      // Child doesn't need pipe input 
+      dup2(next, IN);                     // The input should come from the output of the last child 
+      dup2(fd[OUT], OUT);                 // Child should write to write end of pipe
       close(fd[OUT]); 
       close(next);
-      if(execvp(argv[0], argv)){  // If exec returned then something went wrong 
+      if(execvp(argv[0], argv)){          // If exec returned then something went wrong 
         fprintf(stderr, "Error in exec()\n");
         exit(0);
       }
-    }                            // Inside parent code
-    close(fd[OUT]);               // Parent doesn't write to pipe
-    dup2(fd[IN], next);           // Connect last output to next 
+    }                                     // Inside parent code
+    close(fd[OUT]);                       // Parent doesn't write to pipe
+    dup2(fd[IN], next);                   // Connect last output to next 
     close(fd[IN]); 
     cmd_index++;
   }
 
-  for(int i=0; pid[i]!=0; i++){    // wait for pids
+  for(int i=0; pid[i]!=0; i++){           // wait for pids
     if(!backgr)
       wait_for(pid[i], names[i], hist);
     else{
@@ -220,6 +229,7 @@ int num_commands(char** input){
   return i-1; 
 }
 
+/* For testing purposes */
 void print_char(char** x){
   printf("%s", "NOW PRINTING CHARACTER ARRAY:") ;
   for(int i = 0 ; x[i]; i++){

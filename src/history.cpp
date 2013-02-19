@@ -1,3 +1,7 @@
+/**
+ * Copyright @ Michael Cueno 2013
+ */
+
 #include "history.h"
 
 History::History(){

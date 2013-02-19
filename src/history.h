@@ -1,3 +1,10 @@
+/**
+ * Copyright @ Michael Cueno 2013
+ *
+ * Simple history class implementing a vector of previously run processes in the shell. 
+ * Holds a name, pid and usage stats for each process run to be reported whenever
+ * the user enters 'stats' into the main program. 
+ */
 #ifndef _HISTORY_H
 #define _HISTORY_H
 

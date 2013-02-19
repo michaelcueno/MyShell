@@ -7,6 +7,7 @@
 
 // History list containing commands run and user/sys times for each
 int main(int argc, char** argv){
+  printf("%s", "Welcome to statsh, written by Michael Cueno (mcueno2)\n");
 
   // Keeps track of command history
   History *hist = new History();
@@ -15,6 +16,7 @@ int main(int argc, char** argv){
   int stdin = dup(IN);
   int stdout = dup(OUT);
 
+  // List of processes running in the background. proc is a struct defined in helpers.h
   vector<proc> *background = new vector<proc>(); 
 
   // Main program loop

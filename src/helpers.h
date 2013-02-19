@@ -24,7 +24,7 @@
 using namespace std;
 
 /* Helper defines for remembering which constant is read/write */
-#define ARG_MAX 100 // Assuming no one will type more than 100 piped commands at once.
+#define CMD_MAX 100 // Assuming no one will type more than 100 piped commands at once.
 #define IN 0   // read end
 #define OUT 1  // write end
 
@@ -33,26 +33,29 @@ struct proc {   // Struct for keeping a pid and it's executable name together
 	int pid; 
 };
 
-/* returns a char* with the prompt text. TODO: implement user@pwd >*/
+/** returns a char* with the prompt text (userid ~>) */
 char* prompt();
 
-/* Reads a line from stdin after printing out prompt, returns a char* of input line */
+/** Reads a line from stdin after printing out prompt, returns a char* of input line */
 char* read_line(char* prompt);
 
-/* Takes in an argument vector (array of char pointers) and execs argv[0] with arguments arg
- * The process that this is run in will become the executed command
+/** Takes in an argument vector (array of char pointers) and execs argv[0] with arguments argv
  * Returns pid of forked proccess or -1 if failed 
- *  * @param in: the file descriptor that the command should use as it's input
+ *   @param in: the file descriptor that the command should use as it's input
  */
 int launch_command(int in, int out, char** argv);
 
-/* Parses input and determines if the first command redirects from a file 
+/** Parses input and determines if the first command redirects from a file 
  * or if the last command redirects to an output file. 
  * Returns: void, sets params in and out to be the file descriptor of the redirection
  * files if they exist, or stdin / stdout if no redirection */
 void redirect(char** input, int* in, int* out);
 
-// tODO
+/** This function should be run prior to issuing a new prompt, it checks the list of background
+	processes to see if the status has changed in any of them by using wait() with the WNOHANG option.
+	If a process has fininished, it is removed from the @param background list and added to the 
+	@param hist History list. 
+  */
 void check_background(vector<proc>* background, History* hist);
 
 /** Parses commands and checks if the last command has a & at the end, if it does, method returns true
@@ -60,17 +63,20 @@ void check_background(vector<proc>* background, History* hist);
   */ 
 bool is_background(char** commands); 
 
-/* Commands is a char pointer to programs seperated by the '|' symbol. Functions will be forked and pipe to 
- * eachother, make sure to set stdin and stdout once this function runs to get output back to the terminal */
+/** 'Bootstrap' for the program. Commands is a char pointer to programs seperated by the '|' symbol.
+ *  Functions will be forked and piped to eachother if they are seperated by a '|' symbol.
+ *  This function will change stdin and stdout depending on needs of redirection, be sure to reset
+ *  stdin and stdout before issuing a new prompt!
+ */
 void parse_and_exec(char* commands, History* hist, vector<proc>* background);
 
-/* Loops on each piped command, creating a pipeline for each command, and pipeing the output of the 
+/** Loops on each piped command, creating a pipeline for each command, and pipeing the output of the 
    previous into the input of the next. The last command is redirected to stdout or a file if specified. 
    This function also waits for all childeren and puts usage stats in hist. */
 /* IMPORTANT! Commands is a static pointer array and must be freed! */
 void launch_pipeline(int in, int out, char** commands, History* hist, vector<proc>* background);
 
-/* Waits for the specifed pid and adds the usage stats to hist */
+/** Waits for the specifed pid and adds the usage stats to hist */
 void wait_for(int pid, char* name, History* hist); 
 
 /* check for statsh built-in commands like stats, or exit. Returns true if built in fuction was entered */
