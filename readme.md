@@ -1,9 +1,9 @@
 ## Overview 
-This is an implementation of the bash shell, written for my Operating Systems class at UIC in c++. It handles multiple pipelined commands and supports file redirection. 
+This is an implementation of the bash shell, written for my Operating Systems class at UIC in c++. It handles multiple pipelined commands and supports file redirection and background processes. 
 
 ## Install 
 To install run 'make statsh' 
-!Only works on linux!
+Only works on linux (only tested on Ubuntu 12.04)
 
 ## Usage
 The program will keep track of the usage stats for each command run and executed. This is accomplished by using wait4(). By typing 'stats' the user can view a list of previously run commands and their corresponding usage stats (User time, system time). 
